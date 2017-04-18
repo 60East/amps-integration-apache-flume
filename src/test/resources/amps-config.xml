@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- Example AMPS Server configuration -->
+
+<AMPSConfig>
+  <!-- The name of AMPS instance -->
+  <Name>AMPS</Name>
+
+  <!-- Configure the admin/stats HTTP server -->
+  <Admin>
+    <InetAddr>localhost:8085</InetAddr>
+  </Admin>
+
+  <Transports>
+
+    <!-- json messages using TCP -->
+    <Transport>
+      <Name>json-tcp</Name>
+      <Type>tcp</Type>
+      <InetAddr>9007</InetAddr>
+      <ReuseAddr>true</ReuseAddr>
+      <MessageType>json</MessageType>
+      <Protocol>amps</Protocol>
+    </Transport>
+
+  </Transports>
+
+  <Logging>
+    <Target>
+      <Protocol>file</Protocol>
+      <FileName>./logs/%Y%m%d%H%M%S-%n.log</FileName>
+      <!-- rotate the log file at 2GB of uncompressed log messages -->
+      <RotationThreshold>2G</RotationThreshold>
+      <!-- log all messages at 'trace' level and above -->
+      <Level>trace</Level>
+    </Target>
+
+    <!-- log everything at or above 'info' to stdout -->
+    <Target>
+      <Protocol>stdout</Protocol>
+      <Level>error</Level>
+      <IncludeErrors>00-0015</IncludeErrors>
+    </Target>
+  </Logging>
+
+  <!-- SOW Topic Definitions -->
+
+  <SOW>
+    <Topic>
+      <!-- SOW database file name, relative to the directory
+           where AMPS is started. -->
+      <FileName>./sow/%n-json.sow</FileName>
+      <Name>Orders</Name>
+      <MessageType>json</MessageType>
+      <Key>/order_key</Key>
+    </Topic>
+
+  </SOW>
+
+  <!-- Create a transaction log to enable historical replay on the
+       messages-history topic. -->
+  <TransactionLog>
+    <JournalDirectory>./journal</JournalDirectory>
+    <PreallocatedJournalFiles>1</PreallocatedJournalFiles>
+    <MinJournalSize>10MB</MinJournalSize>
+    <Topic>
+       <Name>Orders</Name>
+       <MessageType>json</MessageType>
+    </Topic>
+    <FlushInterval>100ms</FlushInterval>
+  </TransactionLog>
+
+</AMPSConfig>
+
