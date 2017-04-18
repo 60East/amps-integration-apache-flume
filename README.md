@@ -49,12 +49,18 @@ Included in the project repository is a working example that shows off the power
 2. Start an AMPS server using the config at src/test/resources/amps-config.xml.
 
 3. Create the temporary output directory specified in the above configuration:
+```
     mkdir /tmp/amps-flume/
+```
 
 4. From $FLUME_HOME, start Flume with:
+```
     bin/flume-ng agent -Xmx512m -c conf/ -f conf/flume-conf.properties -n agent -Dflume.root.logger=INFO,console
+```
 
 5. Publish the example JSON messages to the Orders topic using the AMPS spark utility:
+```
     spark publish -server localhost:9007 -topic Orders -rate 1 -file src/test/resources/messages.json
+```
 
 6. Notice that we are publishing at a rate of 1 message per a second, so that in the output we can see the aggregate fields change over time as updates arrive. After about 15 seconds our aggregated subscription view of the data gives us all the results under the output directory (`/tmp/amps-flume/`).
