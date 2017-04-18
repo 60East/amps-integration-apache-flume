@@ -10,11 +10,11 @@ For more in depth information on the AMPS / Apache Flume integration, see our [C
 
 1. First make sure you have at least Maven 3.3 installed.
 
-2. Create a ${basedir}/jars directory and place the 5.2.0.1 or later AMPS Java client JAR under it.
+2. Create a `${basedir}/jars` directory and place the 5.2.0.1 or later AMPS Java client JAR under it.
 
-3. Execute "mvn clean install".
+3. Execute `mvn clean install`.
 
-4. The resulting JAR will be at: target/AMPSFlumeSource-1.0.0-SNAPSHOT.jar
+4. The resulting JAR will be at: `target/AMPSFlumeSource-1.0.0-SNAPSHOT.jar`
 
 
 # Installation
@@ -22,10 +22,10 @@ For more in depth information on the AMPS / Apache Flume integration, see our [C
 To install the AMPS custom Flume source as a plugin within your Flume
 installation, follow the instructions below:
 
-1. Create the plugins.d directory if it doesn't exist in the Flume home
+1. Create the `plugins.d` directory if it doesn't exist in the Flume home
 directory.
 
-2. Create the following directory & file structure under plugins.d:
+2. Create the following directory & file structure under `plugins.d`:
 
 ```
     plugins.d/
@@ -38,15 +38,15 @@ directory.
 
 More information can be found about Flume plugins in the
 [Flume User Guide](https://flume.apache.org/FlumeUserGuide.html).
-Look at the plugins.d section.
+Look at the `plugins.d` section.
 
 # Example Run
 
 Included in the project repository is a working example that shows off the powerful new aggregated subscription feature of AMPS 5.2.
 
-1. Copy the example Flume config from src/test/resources/flume-conf.properties to $FLUME_HOME/conf/.
+1. Copy the example Flume config from `src/test/resources/flume-conf.properties` to `$FLUME_HOME/conf/`.
 
-2. Start an AMPS server using the config at src/test/resources/amps-config.xml.
+2. Start an AMPS server using the config at `src/test/resources/amps-config.xml`.
 
 3. Create the temporary output directory specified in the above configuration:
 ```
