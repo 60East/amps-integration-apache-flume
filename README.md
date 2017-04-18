@@ -4,6 +4,8 @@ This project allows you to directly use an AMPS messaging subscription as an
 input source into Apache Flume. This is done by implementing a custom pollable
 Flume source.
 
+For more in depth information on the AMPS / Apache Flume integration, see our [Crank Up Apache Flume](http://www.crankuptheamps.com/blog/posts/2017/04/18/crank-up-flume-with-amps/) blog article.
+
 ## Build
 
 1. First make sure you have at least Maven 3.3 installed.
@@ -40,15 +42,19 @@ Look at the plugins.d section.
 
 # Example Run
 
-1. Copy the example Flume config from test/resources/flume-conf.properties
-to $FLUME_HOME/conf/.
+Included in the project repository is a working example that shows off the powerful new aggregated subscription feature of AMPS 5.2.
 
-2. Start an AMPS server using the config at test/resources/amps-config.xml.
+1. Copy the example Flume config from src/test/resources/flume-conf.properties to $FLUME_HOME/conf/.
 
-3. From $FLUME_HOME, start Flume with:
-    bin/flume-ng agent -Xmx512m -c conf/ -f conf/flume-conf.properties -n agent -Dflume.root.logger=DEBUG,console
-4. Send JSON messages to AMPS at tcp://127.0.0.1:9007/amps/json on the
-FlumeTopic.
-5. You should see your messages logged to the Flume console log due to the
-example config's logger sink.
+2. Start an AMPS server using the config at src/test/resources/amps-config.xml.
 
+3. Create the temporary output directory specified in the above configuration:
+    mkdir /tmp/amps-flume/
+
+4. From $FLUME_HOME, start Flume with:
+    bin/flume-ng agent -Xmx512m -c conf/ -f conf/flume-conf.properties -n agent -Dflume.root.logger=INFO,console
+
+5. Publish the example JSON messages to the Orders topic using the AMPS spark utility:
+    spark publish -server localhost:9007 -topic Orders -rate 1 -file src/test/resources/messages.json
+
+6. Notice that we are publishing at a rate of 1 message per a second, so that in the output we can see the aggregate fields change over time as updates arrive. After about 15 seconds our aggregated subscription view of the data gives us all the results under the output directory (`/tmp/amps-flume/`).
