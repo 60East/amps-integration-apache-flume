@@ -470,21 +470,29 @@ public class AMPSFlumeSource extends AbstractPollableSource {
             if (headerKeys.contains(COMMAND_HEADER)) {
                 hdrs.put(COMMAND_HEADER,
                         CommandField.encodeCommand(msg.getCommand()));
-            } else if (headerKeys.contains(TOPIC_HEADER)) {
+            }
+            if (headerKeys.contains(TOPIC_HEADER)) {
                 hdrs.put(TOPIC_HEADER, msg.getTopic());
-            } else if (headerKeys.contains(SOW_KEY_HEADER)) {
+            }
+            if (headerKeys.contains(SOW_KEY_HEADER)) {
                 hdrs.put(SOW_KEY_HEADER, msg.getSowKey());
-            } else if (headerKeys.contains(AMPS_TIMESTAMP_HEADER)) {
+            }
+            if (headerKeys.contains(AMPS_TIMESTAMP_HEADER)) {
                 hdrs.put(AMPS_TIMESTAMP_HEADER, msg.getTimestamp());
-            } else if (headerKeys.contains(BOOKMARK_HEADER)) {
+            }
+            if (headerKeys.contains(BOOKMARK_HEADER)) {
                 hdrs.put(BOOKMARK_HEADER, msg.getBookmark());
-            } else if (headerKeys.contains(CORRELATION_ID_HEADER)) {
+            }
+            if (headerKeys.contains(CORRELATION_ID_HEADER)) {
                 hdrs.put(CORRELATION_ID_HEADER, msg.getCorrelationId());
-            } else if (headerKeys.contains(SUB_ID_HEADER)) {
+            }
+            if (headerKeys.contains(SUB_ID_HEADER)) {
                 hdrs.put(SUB_ID_HEADER, msg.getSubId());
-            } else if (headerKeys.contains(LENGTH_HEADER)) {
+            }
+            if (headerKeys.contains(LENGTH_HEADER)) {
                 hdrs.put(LENGTH_HEADER, String.valueOf(msg.getLength()));
-            } else if (headerKeys.contains(TIMESTAMP_HEADER)) {
+            }
+            if (headerKeys.contains(TIMESTAMP_HEADER)) {
                 hdrs.put(TIMESTAMP_HEADER,
                         String.valueOf(System.currentTimeMillis()));
             }
