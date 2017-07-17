@@ -29,10 +29,13 @@ import java.nio.charset.Charset;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 
 import org.apache.flume.ChannelException;
 import org.apache.flume.Context;
@@ -51,6 +54,7 @@ import com.crankuptheamps.client.LoggedBookmarkStore;
 import com.crankuptheamps.client.Message;
 import com.crankuptheamps.client.MessageHandler;
 import com.crankuptheamps.client.RingBookmarkStore;
+import com.crankuptheamps.client.fields.CommandField;
 import com.crankuptheamps.client.fields.Field;
 import com.crankuptheamps.client.util.SerializableFunction;
 
@@ -114,6 +118,13 @@ public class AMPSFlumeSource extends AbstractPollableSource {
     protected Field subId;
     
     /**
+     * A bit flag mask use to filter out incoming messages based upon
+     * their command type integer. Obtained from the configuration via
+     * the {@link CMD_TYPE_FILTER} config key.
+     */
+    protected int cmdTypeFilter;
+    
+    /**
      * The current batch of messages retrieved from the message multi-buffer.
      */
     protected List<Msg> messages = null;
@@ -143,6 +154,11 @@ public class AMPSFlumeSource extends AbstractPollableSource {
      * when it finished start-up if no prune operations have occurred.
      */
     protected long lastPruneMillis;
+    
+    /**
+     * The set of keys for event headers that should be added to each message.
+     */
+    protected Set<String> headerKeys;
 
     /**
      * Reads the current batch of AMPS messages from the message multi-buffer,
@@ -204,7 +220,7 @@ public class AMPSFlumeSource extends AbstractPollableSource {
                 try {
                     if (doDiscards) {
                         for (Msg msg: messages) {
-                            bStore.discard(subId, msg.bookmarkSeqNo);
+                            bStore.discard(subId, msg.getBookmarkSeqNo());
                         }
                         LOGGER.debug("Committed batch by discarding messages.");
                     }
@@ -284,6 +300,7 @@ public class AMPSFlumeSource extends AbstractPollableSource {
             String options = context.getString(OPTIONS);
             String bookmarkLog = context.getString(BOOKMARK_LOG);
             String subId = context.getString(SUB_ID);
+            String evtHeaders = context.getString(EVENT_HEADERS);
             int maxBuffs = context.getInteger(MAX_BUFFS, 10);
             int maxBatch = context.getInteger(MAX_BATCH, 1000);
             if (bookmarkLog != null && !bookmarkLog.isEmpty()
@@ -321,6 +338,43 @@ public class AMPSFlumeSource extends AbstractPollableSource {
                 LOGGER.debug("subId: {}", subId);
                 command.setSubId(subId)
                     .setBookmark(Client.Bookmarks.MOST_RECENT);
+            }
+            
+            // Set the message command type filter.
+            cmdTypeFilter = Message.Command.Publish | Message.Command.SOW
+                    | Message.Command.DeltaPublish | Message.Command.OOF;
+            String cmdTypeFilterStr = context.getString(CMD_TYPE_FILTER);
+            if (cmdTypeFilterStr != null && !cmdTypeFilterStr.isEmpty()) {
+                cmdTypeFilter = Integer.valueOf(cmdTypeFilterStr);
+            }
+            
+            // Are any headers specified that should be set on each event.
+            if (evtHeaders != null && !evtHeaders.isEmpty()) {
+                LOGGER.debug("event headers: {}", evtHeaders);
+                Set<String> knownKeys = new HashSet<String>();
+                knownKeys.add(COMMAND_HEADER);
+                knownKeys.add(TOPIC_HEADER);
+                knownKeys.add(SOW_KEY_HEADER);
+                knownKeys.add(AMPS_TIMESTAMP_HEADER);
+                knownKeys.add(BOOKMARK_HEADER);
+                knownKeys.add(CORRELATION_ID_HEADER);
+                knownKeys.add(SUB_ID_HEADER);
+                knownKeys.add(LENGTH_HEADER);
+                knownKeys.add(TIMESTAMP_HEADER);
+                headerKeys = new HashSet<String>();
+                String[] hdrKeys = evtHeaders.split(",");
+                for (String key: hdrKeys) {
+                    key = key.trim();
+                    if (!key.isEmpty()) {
+                        headerKeys.add(key);
+                    }
+                }
+                Set<String> badKeys = new HashSet<String>(headerKeys);
+                badKeys.removeAll(knownKeys);
+                if (!badKeys.isEmpty()) {
+                    throw new IllegalArgumentException("Invalid event header "
+                            + "key(s): " + badKeys);
+                }
             }
             
             // Execute the command.
@@ -387,17 +441,57 @@ public class AMPSFlumeSource extends AbstractPollableSource {
          */
         @Override
         public void invoke(Message msg) {
-            if (msg.getCommand() == Message.Command.Publish) {
-                Msg m = new Msg();
-                Field data = msg.getDataRaw();
-                byte[] ba = new byte[data.length];
-                System.arraycopy(data.buffer, data.position, ba, 0, data.length);
-                m.data = ba;
-                m.bookmarkSeqNo = msg.getBookmarkSeqNo();
-                msgMultiBuf.append(m);
+            // Filter out unwanted command types.
+            if ((msg.getCommand() & cmdTypeFilter) == 0) {
+                LOGGER.debug("Filtering message out of source by command type: "
+                        + "cmdType={}, cmdTypeFilter={}",
+                        msg.getCommand(), cmdTypeFilter);
+                return;
             }
+            
+            Msg m = new Msg();
+            Field data = msg.getDataRaw();
+            byte[] ba = new byte[data.length];
+            System.arraycopy(data.buffer, data.position, ba, 0, data.length);
+            m.setBody(ba);
+            m.setBookmarkSeqNo(msg.getBookmarkSeqNo());
+            if (!headerKeys.isEmpty()) {
+                addEventHeaders(msg, m);
+            }
+            msgMultiBuf.append(m);
         }
         
+        /**
+         * Add any specified event headers to the message event.
+         */
+        protected void addEventHeaders(Message msg, Msg m) {
+            Map<String, String> hdrs = new HashMap<String, String>();
+            
+            if (headerKeys.contains(COMMAND_HEADER)) {
+                hdrs.put(COMMAND_HEADER,
+                        CommandField.encodeCommand(msg.getCommand()));
+            } else if (headerKeys.contains(TOPIC_HEADER)) {
+                hdrs.put(TOPIC_HEADER, msg.getTopic());
+            } else if (headerKeys.contains(SOW_KEY_HEADER)) {
+                hdrs.put(SOW_KEY_HEADER, msg.getSowKey());
+            } else if (headerKeys.contains(AMPS_TIMESTAMP_HEADER)) {
+                hdrs.put(AMPS_TIMESTAMP_HEADER, msg.getTimestamp());
+            } else if (headerKeys.contains(BOOKMARK_HEADER)) {
+                hdrs.put(BOOKMARK_HEADER, msg.getBookmark());
+            } else if (headerKeys.contains(CORRELATION_ID_HEADER)) {
+                hdrs.put(CORRELATION_ID_HEADER, msg.getCorrelationId());
+            } else if (headerKeys.contains(SUB_ID_HEADER)) {
+                hdrs.put(SUB_ID_HEADER, msg.getSubId());
+            } else if (headerKeys.contains(LENGTH_HEADER)) {
+                hdrs.put(LENGTH_HEADER, String.valueOf(msg.getLength()));
+            } else if (headerKeys.contains(TIMESTAMP_HEADER)) {
+                hdrs.put(TIMESTAMP_HEADER,
+                        String.valueOf(System.currentTimeMillis()));
+            }
+            
+            // Set the headers on the event.
+            m.setHeaders(hdrs);
+        }
     }
     
     /**
@@ -416,12 +510,31 @@ public class AMPSFlumeSource extends AbstractPollableSource {
          * logged into the bookmark store. We'll need this later for discarding
          * the message.
          */
-        public long bookmarkSeqNo;
+        private long bookmarkSeqNo;
         
         /**
          * The message body data as a byte array.
          */
-        public byte[] data;
+        private byte[] data;
+        
+        /**
+         * The message/event headers, if any.
+         */
+        private Map<String, String> headers;
+        
+        /**
+         * Get the bookmark store sequence number used to discard the message.
+         */
+        public long getBookmarkSeqNo() {
+            return bookmarkSeqNo;
+        }
+        
+        /**
+         * Set the bookmark store sequence number used to discard the message.
+         */
+        public void setBookmarkSeqNo(long bmSeqNo) {
+            bookmarkSeqNo = bmSeqNo;
+        }
 
         /**
          * Gets the message body data as a byte array.
@@ -432,14 +545,6 @@ public class AMPSFlumeSource extends AbstractPollableSource {
         }
 
         /**
-         * Overridden to return null. Headers aren't supported by this class.
-         */
-        @Override
-        public Map<String, String> getHeaders() {
-            return null;
-        }
-
-        /**
          * Sets the message body data as a byte array.
          */
         @Override
@@ -447,14 +552,21 @@ public class AMPSFlumeSource extends AbstractPollableSource {
             data = ba;
             
         }
+
+        /**
+         * Gets the event headers map of string key/value pairs.
+         */
+        @Override
+        public Map<String, String> getHeaders() {
+            return headers;
+        }
         
         /**
-         * @throws UnsupportedOperationException Overridden to always throw
-         *         this exception. Headers aren't supported by this class.
+         * Sets the event headers to the specified map of string key/value pairs.
          */
         @Override
         public void setHeaders(Map<String, String> hdrs) {
-            throw new UnsupportedOperationException("Headers not supported.");
+            headers = hdrs;
         }
     }
 
