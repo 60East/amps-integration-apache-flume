@@ -36,6 +36,7 @@ import com.crankuptheamps.client.util.SerializableFunction;
 
 import static com.crankuptheamps.flume.Constants.*;
 
+import java.beans.ExceptionListener;
 import java.util.Properties;
 
 /**
@@ -100,6 +101,14 @@ public class AMPSBasicClientFunction
             } else {
                 client = new Client(clientName);
             }
+
+            // Add logging exception listener to client.
+            client.setExceptionListener(new ExceptionListener() {
+                @Override
+                public void exceptionThrown(Exception e) {
+                    LOGGER.error("AMPS client received error: " + e, e);
+                }
+            });
 
             // Setup bookmark store if needed.
             String storePath = config.getProperty(BOOKMARK_LOG);

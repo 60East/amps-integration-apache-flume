@@ -25,7 +25,6 @@
 
 package com.crankuptheamps.flume;
 
-import java.nio.charset.Charset;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
@@ -455,7 +454,7 @@ public class AMPSFlumeSource extends AbstractPollableSource {
             System.arraycopy(data.buffer, data.position, ba, 0, data.length);
             m.setBody(ba);
             m.setBookmarkSeqNo(msg.getBookmarkSeqNo());
-            if (!headerKeys.isEmpty()) {
+            if (headerKeys != null && !headerKeys.isEmpty()) {
                 addEventHeaders(msg, m);
             }
             msgMultiBuf.append(m);
