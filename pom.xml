@@ -21,7 +21,7 @@
 
         <!-- Libraries -->
         <org.apache.flume.version>1.7.0</org.apache.flume.version>
-        <org.junit.version>4.12</org.junit.version>
+        <org.junit.version>4.13.1</org.junit.version>
         <org.slf4j.version>1.6.1</org.slf4j.version>
     </properties>
 
