@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (c) 2017 60East Technologies Inc., All Rights Reserved.
+// Copyright (c) 2017-2022 60East Technologies Inc., All Rights Reserved.
 //
 // This computer software is owned by 60East Technologies Inc. and is
 // protected by U.S. copyright laws and other laws and by international

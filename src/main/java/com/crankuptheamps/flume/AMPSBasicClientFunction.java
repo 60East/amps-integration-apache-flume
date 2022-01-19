@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (c) 2017 60East Technologies Inc., All Rights Reserved.
+// Copyright (c) 2017-2022 60East Technologies Inc., All Rights Reserved.
 //
 // This computer software is owned by 60East Technologies Inc. and is
 // protected by U.S. copyright laws and other laws and by international
@@ -32,6 +32,8 @@ import com.crankuptheamps.client.Client;
 import com.crankuptheamps.client.DefaultServerChooser;
 import com.crankuptheamps.client.HAClient;
 import com.crankuptheamps.client.LoggedBookmarkStore;
+import com.crankuptheamps.client.MemoryPublishStore;
+import com.crankuptheamps.client.PublishStore;
 import com.crankuptheamps.client.util.SerializableFunction;
 
 import static com.crankuptheamps.flume.Constants.*;
@@ -119,7 +121,27 @@ public class AMPSBasicClientFunction
             if (storePath != null) {
                 client.setBookmarkStore(new LoggedBookmarkStore(storePath));
             }
-            
+
+            // Setup publish store if needed.
+            String pubStoreType = config.getProperty(PUB_STORE_TYPE, "none");
+            if (!"none".equals(pubStoreType)) {
+                int initialCapacity = Integer.valueOf(
+                        config.getProperty(PUB_STORE_INIT_CAP, "1000"));
+                if ("memory".equals(pubStoreType)) {
+                    client.setPublishStore(
+                            new MemoryPublishStore(initialCapacity));
+                } else if ("file".equals(pubStoreType)) {
+                    String path = config.getProperty(PUB_STORE_PATH);
+                    if (path == null || path.isEmpty()) {
+                        throw new IllegalArgumentException(PUB_STORE_PATH +
+                                " must be specified for a file-backed publish"
+                                + " store.");
+                    }
+                    client.setPublishStore(
+                            new PublishStore(path, initialCapacity));
+                }
+            }
+
             // Connect and logon to AMPS server.
             if (useHA) {
                 ((HAClient) client).connectAndLogon();

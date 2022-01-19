@@ -9,6 +9,7 @@
   <!-- Configure the admin/stats HTTP server -->
   <Admin>
     <InetAddr>localhost:8085</InetAddr>
+    <SQLTransport>websocket-any</SQLTransport>
   </Admin>
 
   <Transports>
@@ -21,6 +22,12 @@
       <ReuseAddr>true</ReuseAddr>
       <MessageType>json</MessageType>
       <Protocol>amps</Protocol>
+    </Transport>
+    <Transport>
+      <Name>websocket-any</Name>
+      <Protocol>websocket</Protocol>
+      <Type>tcp</Type>
+      <InetAddr>9008</InetAddr>
     </Transport>
 
   </Transports>
@@ -55,6 +62,14 @@
       <Key>/order_key</Key>
     </Topic>
 
+    <Topic>
+      <!-- SOW database file name, relative to the directory
+           where AMPS is started. -->
+      <FileName>./sow/%n-json.sow</FileName>
+      <Name>AMPSFlumeSinkTest</Name>
+      <MessageType>json</MessageType>
+      <Key>/symbol</Key>
+    </Topic>
   </SOW>
 
   <!-- Create a transaction log to enable historical replay on the

@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (c) 2017 60East Technologies Inc., All Rights Reserved.
+// Copyright (c) 2017-2022 60East Technologies Inc., All Rights Reserved.
 //
 // This computer software is owned by 60East Technologies Inc. and is
 // protected by U.S. copyright laws and other laws and by international
@@ -26,7 +26,6 @@
 
 package com.crankuptheamps.flume;
 
-import java.nio.charset.Charset;
 import com.crankuptheamps.client.Message;
 
 /**
@@ -54,6 +53,26 @@ public interface Constants {
      * Flume context.
      */
     String BOOKMARK_LOG = "bookmarkLog";
+
+    /**
+     * Configuration key used to get the publish store type from the
+     * Flume context. Possible values are "none" for no publish store, "memory"
+     * for a memory-backed publish store, or "file" for a file-backed publish
+     * store. Default is "none".
+     */
+    String PUB_STORE_TYPE = "pubStoreType";
+
+    /**
+     * Configuration key used to get the publish store's initial capacity
+     * (in 2KB blocks) from the Flume context. Default is 1000 blocks.
+     */
+    String PUB_STORE_INIT_CAP = "pubStoreInitialCap";
+
+    /**
+     * Configuration key used to get the publish store's backing file path from
+     * the Flume context. Required if using a file-backed publish store.
+     */
+    String PUB_STORE_PATH = "pubStorePath";
     
     /**
      * Configuration key used to get server URI(s) from the Flume context.
@@ -72,7 +91,10 @@ public interface Constants {
     
     /**
      * Configuration key used to get the AMPS topic expression from the
-     * Flume context.
+     * Flume context. For a source this may be a topic or regular expression
+     * topic. For a sink it must be an actual topic since it will be published
+     * to by default (unless an event specifies the topic it should be published
+     * to in its topic header).
      */
     String TOPIC = "topic";
     
@@ -111,10 +133,11 @@ public interface Constants {
     String MAX_BUFFS = "maxBuffers";
     
     /**
-     * Configuration key used to get the maximum batch size (within each 
-     * message buffer) from the Flume context. This shouldn't be larger than
+     * Configuration key used to get the maximum batch size from the Flume
+     * context. This is the max number of events that will be written to or
+     * read from a channel transaction. This shouldn't be larger than
      * your smallest configured transaction capacity for all Flume
-     * channels that your AMPS source writes to.
+     * channels used by your AMPS sources / sinks.
      */
     String MAX_BATCH = "maxBatch";
     
@@ -132,6 +155,48 @@ public interface Constants {
      * but is NOT recommended for a production deployment.
      */
     String PRUNE_TIME_THRESHOLD = "pruneTimeThreshold";
+
+    /**
+     * Configuration key used to get the use-topic-header flag from the
+     * Flume context. If set to true, for any event read from the sink's channel
+     * that has a topic header, it will be published to the topic specified in
+     * the event's header (rather than the sink's default configured topic).
+     * Defaults to true.
+     */
+    String USE_TOPIC_HEADER = "useTopicHeader";
+
+    /**
+     * Configuration key used to get the publish flush timeout from the
+     * Flume context. This is the publish flush executed at the end of the
+     * batch. Defaults to zero (i.e. wait indefinitely for whole batch to be
+     * persisted). If set to -1, no publish flush is executed at the end of the
+     * batch. Warning, not using a publish flush prevents detection of any
+     * failed writes before committing and will also lead to committing before
+     * the whole batch is persisted by AMPS (this might be appropriate if
+     * relying on a file-backed publish store to make sure messages are
+     * eventually persisted in AMPS).
+     */
+    String PUBLISH_FLUSH_TIMEOUT = "publishFlushTimeout";
+
+    /**
+     * Configuration key used to get the state of the log-message-on-write-error
+     * flag from the Flume context. If this is true, the failed write handler
+     * will write the actual message that failed to the Flume log when a failed
+     * write is detected. NOTE: the whole message will only be available to the
+     * failed write handler if the AMPS client is using a publish store. 
+     */
+    String LOG_MSG_ON_WRITE_ERROR = "logMsgOnWriteError";
+
+    /**
+     * Configuration key used to get the state of the rollback-on-error
+     * flag from the Flume context. If this is true, then any failed writes
+     * detected or exceptions caught during a batch will cause the channel
+     * transaction to be rollback (leading to those same messages being read
+     * during the next batch). Setting this to false may be appropriate if
+     * relying on a file-backed publish store to eventually make sure any
+     * messages published reach AMPS.
+     */
+    String ROLLBACK_ON_ERROR = "rollbackOnError";
     
     /**
      * <p>

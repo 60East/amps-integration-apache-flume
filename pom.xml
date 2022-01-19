@@ -3,13 +3,13 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.crankuptheamps</groupId>
-    <artifactId>AMPSFlumeSource</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <artifactId>AMPSFlumeComponents</artifactId>
+    <version>1.1.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
-    <name>AMPSFlumeSource</name>
+    <name>AMPSFlumeComponents</name>
     <description>
-        Custom Flume Source for integration with AMPS messaging.
+        Custom Flume Source and Sink for integration with AMPS messaging.
     </description>
     <url>http://www.crankuptheamps.com/flume/api</url>
 
@@ -29,7 +29,7 @@
         <dependency>
             <groupId>com.crankuptheamps</groupId>
             <artifactId>amps-client</artifactId>
-            <version>5.2.0.1</version>
+            <version>5.3.3.0</version>
             <scope>system</scope>
             <systemPath>${basedir}/jars/amps_client.jar</systemPath>
         </dependency>
