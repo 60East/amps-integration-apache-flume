@@ -1,4 +1,4 @@
-# AMPS Flume Source
+# AMPS Flume Components
 
 This project allows you to directly use an AMPS messaging subscription as an
 input source into Apache Flume. This is done by implementing a custom pollable
